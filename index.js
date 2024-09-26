@@ -2,7 +2,12 @@ import express from 'express'
 import { createServer } from 'http' // Use the createServer function from the 'http' module
 import { Server } from 'socket.io' // Import Server from 'socket.io'
 import { PORT } from './Config.js'
+import cors from 'cors'
 const app = express()
+// Middleware
+app.use(cors())
+app.use(express.json())
+
 // Create an HTTP server
 const server = createServer(app)
 // Create a Socket.IO instance attached to the server
