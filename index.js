@@ -3,10 +3,13 @@ import { createServer } from 'http' // Use the createServer function from the 'h
 import { Server } from 'socket.io' // Import Server from 'socket.io'
 import { PORT } from './Config.js'
 import cors from 'cors'
+import AuthRouter from './DB/Routes/AuthRouter.js'
 const app = express()
 // Middleware
 app.use(cors())
 app.use(express.json())
+
+app.use('/Api/Auth', AuthRouter)
 
 // Create an HTTP server
 const server = createServer(app)
