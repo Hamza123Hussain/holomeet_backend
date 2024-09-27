@@ -1,87 +1,72 @@
-import express from 'express' // Import express for creating the server
-import http from 'http' // Import http for creating the server
-import { Server } from 'socket.io' // Import Socket.IO for real-time communication
-import cors from 'cors' // Import CORS for cross-origin request handling
-import { PORT } from './Config.js' // Import PORT from your configuration
+import express from 'express'
+import http from 'http'
+import { Server } from 'socket.io'
+import cors from 'cors'
+import { PORT } from './Config.js'
+import { FileShare } from './DB/Controllers/FileShare.js'
 
-const app = express() // Create an instance of express (the main application)
-const server = http.createServer(app) // Create an HTTP server using express
-
-// Initialize Socket.IO with the server and configure CORS (cross-origin resource sharing)
+const app = express()
+const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: '*', // Allow all origins (can restrict to specific domains in production)
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow only GET and POST methods
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 })
 
-app.use(cors()) // Enable CORS for all routes in the app
-app.use(express.json()) // Enable the app to parse incoming JSON requests
+app.use(cors())
+app.use(express.json())
 
 // Sample route to test if the server is running
 app.get('/', (req, res) => {
-  res.send('HoloMeet API is running') // Respond with a simple message
+  res.send('HoloMeet API is running')
 })
 
-// WebRTC signaling logic using Socket.IO
+// File upload handling via Socket.IO
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id) // Log when a user connects to the server
+  console.log('User connected:', socket.id)
 
-  /**
-   * Handling the WebRTC offer event
-   * The 'offer' is sent by the initiating peer in the WebRTC connection
-   * This event is triggered when a peer sends an offer to start a WebRTC connection
-   */
+  socket.on('file-upload', async (file) => {
+    try {
+      const fileurl = await FileShare(file) // Call the FileShare function directly
+      io.emit('file-shared', { fileurl }) // Emit the file URL to all clients
+    } catch (error) {
+      console.error('File upload error:', error)
+      socket.emit('file-upload-error', { error: error.message }) // Send error message back to the client
+    }
+  })
+
+  // WebRTC signaling logic using Socket.IO
   socket.on('offer', (data) => {
-    console.log('Offer received:', data) // Log the offer data received from the client
-
-    // Forward the offer to the target peer specified in the data
+    console.log('Offer received:', data)
     socket.to(data.target).emit('offer', {
-      sdp: data.sdp, // SDP (Session Description Protocol) data is required to initiate a WebRTC connection
-      sender: socket.id, // Include the sender's socket ID for response tracking
+      sdp: data.sdp,
+      sender: socket.id,
     })
   })
 
-  /**
-   * Handling the WebRTC answer event
-   * The 'answer' is sent by the receiving peer in response to an offer
-   * This event is triggered when the target peer sends an answer to the offer
-   */
   socket.on('answer', (data) => {
-    console.log('Answer received:', data) // Log the answer data received from the client
-
-    // Forward the answer to the original offer sender
+    console.log('Answer received:', data)
     socket.to(data.target).emit('answer', {
-      sdp: data.sdp, // SDP answer to complete the WebRTC handshake
-      sender: socket.id, // Include the sender's socket ID for response tracking
+      sdp: data.sdp,
+      sender: socket.id,
     })
   })
 
-  /**
-   * Handling the ICE candidate event
-   * ICE (Interactive Connectivity Establishment) candidates are sent during WebRTC negotiation
-   * This event is triggered when a peer finds an ICE candidate to help establish a connection
-   */
   socket.on('ice-candidate', (data) => {
-    console.log('ICE candidate received:', data) // Log the ICE candidate data
-
-    // Forward the ICE candidate to the other peer
+    console.log('ICE candidate received:', data)
     socket.to(data.target).emit('ice-candidate', {
-      candidate: data.candidate, // The ICE candidate needed for establishing the peer connection
-      sender: socket.id, // Include the sender's socket ID for response tracking
+      candidate: data.candidate,
+      sender: socket.id,
     })
   })
 
-  /**
-   * Handle user disconnection
-   * This event is triggered when a user disconnects from the WebSocket (e.g., closes the tab)
-   */
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id) // Log the user's disconnection
+    console.log('User disconnected:', socket.id)
   })
 })
 
 // Start the server and listen on the specified PORT
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`) // Log that the server is up and running
+  console.log(`Server is running on port ${PORT}`)
 })
