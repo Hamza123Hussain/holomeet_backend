@@ -3,7 +3,7 @@ import { auth, db } from '../../../FireBase_Config.js'
 import { doc, getDoc } from 'firebase/firestore'
 
 export const SignIn = async (req, res) => {
-  const { Email, Password } = req.body
+  const { Email, Password } = req.query
 
   try {
     // Sign in the user with email and password
