@@ -7,7 +7,7 @@ import { Signout } from '../Controllers/Auth/Signout.js'
 
 const AuthRouter = Router()
 AuthRouter.post('/RegisterUser', upload.single('Image'), RegisterUser)
-AuthRouter.post('/Login', SignIn)
+AuthRouter.get('/Login', SignIn)
 AuthRouter.post('/ResetPassword', ResetPass)
 AuthRouter.get('/SIGNOUT', Signout)
 export default AuthRouter
